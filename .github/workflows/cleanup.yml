@@ -1,63 +1,21 @@
-name: Deploy HTML App to Azure
+name: Cleanup Azure Resources
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 jobs:
-  deploy:
+  destroy:
     runs-on: ubuntu-latest
-    env:
-      TF_DIR: terraform
-      WEBAPP_DIR: webapp
-      ZIP_NAME: site.zip
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Azure Login (Service Principal)
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Pre-clean existing resources (safe re-run)
+      - name: Delete Resource Group
         uses: azure/cli@v2
         with:
           azcliversion: latest
           inlineScript: |
-            if az group exists --name lesson6-rg | grep -q true; then
-              echo "Resource group exists — deleting before Terraform runs..."
-              az group delete --name lesson6-rg --yes
-              echo "Deleted."
-            else
-              echo "Resource group does not exist — nothing to clean."
-            fi
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform Init
-        run: terraform -chdir=${{ env.TF_DIR }} init
-
-      - name: Terraform Apply
-        run: terraform -chdir=${{ env.TF_DIR }} apply -auto-approve
-
-      - name: Capture Terraform Outputs
-        id: tfout
-        run: |
-          echo "webapp_name=$(terraform -chdir=${{ env.TF_DIR }} output -raw webapp_name)" >> $GITHUB_OUTPUT
-          echo "webapp_url=$(terraform -chdir=${{ env.TF_DIR }} output -raw webapp_url)" >> $GITHUB_OUTPUT
-
-      - name: Package Static Site
-        run: |
-          cd ${{ env.WEBAPP_DIR }}
-          zip -r ../${{ env.ZIP_NAME }} .
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ steps.tfout.outputs.webapp_name }}
-          package: ./${{ env.ZIP_NAME }}
-          
+            az group delete --name lesson6-rg --yes
