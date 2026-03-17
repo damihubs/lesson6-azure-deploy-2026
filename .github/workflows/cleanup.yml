@@ -1,17 +1,21 @@
 name: Cleanup Azure Resources
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
 
 jobs:
-  cleanup:
+  destroy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Azure Login
+      - name: Azure Login (Service Principal)
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Delete Resource Group
-        run: az group delete --name lesson6-rg --yes
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az group delete --name lesson6-rg --yes --no-wait
