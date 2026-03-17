@@ -43,11 +43,14 @@ jobs:
         if: steps.check.outputs.exists == 'false'
         run: terraform -chdir=${{ env.TF_DIR }} apply -auto-approve
 
-      - name: Capture Terraform Outputs
+      - name: Capture Webapp Name
         id: tfout
-        run: |
-          echo "webapp_name=$(terraform -chdir=${{ env.TF_DIR }} output -raw webapp_name)" >> $GITHUB_OUTPUT
-          echo "webapp_url=$(terraform -chdir=${{ env.TF_DIR }} output -raw webapp_url)" >> $GITHUB_OUTPUT
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            webapp_name=$(az webapp list --resource-group lesson6-rg --query "[0].name" --output tsv)
+            echo "webapp_name=$webapp_name" >> $GITHUB_OUTPUT
 
       - name: Package Static Site
         run: |
