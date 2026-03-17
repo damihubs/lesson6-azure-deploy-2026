@@ -1,0 +1,49 @@
+name: Deploy HTML App to Azure
+ 
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+ 
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      TF_DIR: terraform  # Path to Terraform files
+      WEBAPP_DIR: webapp  # Path to HTML content
+      ZIP_NAME: site.zip  # Name of deployment package
+ 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+ 
+      - name: Azure Login (Service Principal)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+ 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+ 
+      - name: Terraform Init
+        run: terraform -chdir=${{ env.TF_DIR }} init
+ 
+      - name: Terraform Apply
+        run: terraform -chdir=${{ env.TF_DIR }} apply -auto-approve
+ 
+      - name: Capture Terraform Outputs
+        id: tfout
+        run: |
+          echo "webapp_name=$(terraform -chdir=${{ env.TF_DIR }} output -raw webapp_name)" >> $GITHUB_OUTPUT
+          echo "webapp_url=$(terraform -chdir=${{ env.TF_DIR }} output -raw webapp_url)" >> $GITHUB_OUTPUT
+ 
+      - name: Package Static Site
+        run: |
+          cd ${{ env.WEBAPP_DIR }}
+          zip -r ../${{ env.ZIP_NAME }} .
+ 
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ steps.tfout.outputs.webapp_name }}
+          package: ./${{ env.ZIP_NAME }}
