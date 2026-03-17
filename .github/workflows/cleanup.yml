@@ -4,7 +4,7 @@ on:
   workflow_dispatch
 
 jobs:
-  destroy:
+  cleanup:
     runs-on: ubuntu-latest
 
     steps:
@@ -14,4 +14,4 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Delete Resource Group
-        run: az group delete --name lesson6-rg --yes --no-wait
+        run: az group delete --name lesson6-rg --yes
